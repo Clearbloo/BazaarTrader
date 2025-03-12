@@ -1,5 +1,0 @@
-(executable
- (name main)
- (public_name trading_simulator)
- (libraries market)
- (modules main))
