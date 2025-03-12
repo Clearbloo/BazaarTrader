@@ -1,0 +1,13 @@
+name = "bazaar_trader"
+version = "0.0.1"
+
+description = ""
+# licences = ["Apache-2.0"]
+repository = { type = "github", user = "Clearbloo", repo = "BazaarTrader" }
+dependencies = { gleam_stdlib = ">= 0.57.0 and < 1.0.0" }
+# links = [{ title = "Website", href = "" }]
+
+# For a full reference of all the available options, you can have a look at
+# https://gleam.run/writing-gleam/gleam-toml/.
+
+
