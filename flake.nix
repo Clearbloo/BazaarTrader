@@ -11,11 +11,7 @@
       let pkgs = nixpkgs.legacyPackages.${system};
       in {
         devShells.default = pkgs.mkShellNoCC {
-          buildInputs = [
-            pkgs.gleam
-            pkgs.erlang
-            # pkgs.rebar3
-          ];
+          buildInputs = [ pkgs.gleam pkgs.erlang pkgs.rebar3 ];
         };
       });
 }
