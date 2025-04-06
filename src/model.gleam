@@ -1,5 +1,18 @@
+import gleam/dict
+
+// A market just gives you the price of things.
+// Maybe a bit more like bid and ask but this is enough for now
+pub type Market {
+  Market(dict.Dict(Product, Float))
+}
+
+pub type Product {
+  Security
+  Derivative
+}
+
 pub type Security {
-  Stock(value: Float, mu: Float, std: Float, time: Float)
+  Stock(mu: Float, std: Float, time: Float)
   Bond(payout: Float)
 }
 

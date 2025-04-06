@@ -30,14 +30,21 @@ pub fn discount_factor(value: Float, rate: Float, time: Float) {
   elementary.exponential(rate *. time) *. value
 }
 
-pub fn update_price(secu: model.Security, tick: Float) {
+pub fn update_price(secu: model.Security, value: Float, tick: Float) {
   // Use Geometric Brownian motion to increment the stock prices
   case secu {
-    model.Stock(value, mu, std, _) -> {
+    model.Stock(mu, std, _) -> {
       gmb(value, mu, std, tick)
     }
     model.Bond(payout) -> {
       discount_factor(payout, 1.0, tick)
     }
+  }
+}
+
+pub fn update_security(secu: model.Security, value: Float) {
+  case secu {
+    model.Stock(_, _, _, _) -> model.Stock(..secu, e: value)
+    model.Bond(_) -> model.Bond(..secu, value: value)
   }
 }
