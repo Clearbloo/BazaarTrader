@@ -1,12 +1,16 @@
 import gleam/io
 import gleam/list
-import market
-import model
+import gleam/result
+import ordered_dict
 
-pub fn value_option(opt: model.OptionContract) {
+import derivative.{type OptionContract, Call, Put}
+import market.{type Market, type Time, Market}
+import security.{Stock}
+
+pub fn value_option(opt: OptionContract) {
   case opt.option_type {
-    model.Call -> 1.0
-    model.Put -> 2.0
+    Call -> 1.0
+    Put -> 2.0
   }
 }
 
@@ -24,34 +28,34 @@ pub fn idiosyncratic_variance(x: List(Float), rho: Float) {
   var_x *. { 1.0 -. rho *. rho }
 }
 
-pub fn repeat_n(
+pub fn simulate(
   n: Int,
-  input: Result(value, String),
-  func: fn(Result(value, String)) -> Result(value, String),
-) {
+  m: Market,
+  step: Time,
+  sim_func: fn(Market, Time) -> Float,
+) -> Result(Market, Nil) {
   case n {
-    0 -> input
-    _ if n < 0 -> Error("Cannot repeat a negative number of times")
-    _ -> func(input) |> repeat_n(n - 1, _, func)
+    0 -> Ok(m)
+    foo if foo < 0 -> Error(Nil)
+    _ -> {
+      use latest_time <- result.try(ordered_dict.latest(m.prices))
+      let new_prices =
+        ordered_dict.insert(m.prices, latest_time +. step, sim_func(m, step))
+      let m = Market(..m, prices: new_prices)
+      simulate(n - 1, m, step, sim_func)
+    }
   }
 }
 
 pub fn main() {
-  let some_stock = model.Stock(10.0, 1.0, 0.1, 1.0)
-  let call = model.OptionContract(1.2, "hi", some_stock, model.Call)
+  let stock = Stock
+  let some_stock = market.Security(Stock)
+  let call = derivative.OptionContract(1.2, "hi", stock, Call)
   io.debug(call)
   let var = single_variable_gaussian_variance([call.strike])
   io.debug(var)
 
-  repeat_n(10, Ok(some_stock), fn(stock: Result(model.Security, String)) {
-    case stock {
-      Ok(some_stock) -> {
-        let new_price = market.update_price(some_stock, 1.0)
-        io.debug(new_price)
-        let some_stock = model.Stock(..some_stock, value: new_price)
-        Ok(some_stock)
-      }
-      Error(s) -> Error(s)
-    }
-  })
+  let market = Market(some_stock, "FOO", ordered_dict.new_float())
+  let new_prices = simulate(10, market, 0.1, market.model_price)
+  io.debug(new_prices)
 }
