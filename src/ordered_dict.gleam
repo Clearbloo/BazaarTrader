@@ -4,23 +4,24 @@ import gleam/dict.{type Dict}
 import gleam/float
 import gleam/list
 import gleam/order
-import gleam/result
 
 /// Order is largest to smallest
 pub type OrderedDict(k, v) {
   OrderedDict(
-    map: Dict(k, v),
+    values: Dict(k, v),
     order: List(k),
     order_func: fn(k, k) -> order.Order,
   )
 }
 
 pub fn new_float() {
-  OrderedDict(dict.new(), list.new(), float.compare)
+  OrderedDict(dict.new(), list.new(), fn(x, y) {
+    float.compare(x, y) |> order.negate
+  })
 }
 
 pub fn get(d: OrderedDict(key, value), k: key) -> Result(value, Nil) {
-  d.map
+  d.values
   |> dict.get(k)
 }
 
@@ -29,11 +30,13 @@ pub fn insert(
   k: key,
   v: value,
 ) -> OrderedDict(key, value) {
-  let order = [k, ..d.order] |> list.sort(d.order_func)
-  OrderedDict(dict.insert(d.map, k, v), order, d.order_func)
+  let order = case list.contains(d.order, k) {
+    False -> [k, ..d.order] |> list.sort(d.order_func)
+    True -> d.order
+  }
+  OrderedDict(dict.insert(d.values, k, v), order, d.order_func)
 }
 
-pub fn latest(d: OrderedDict(key, value)) -> Result(value, Nil) {
-  use k <- result.try(list.first(d.order))
-  get(d, k)
+pub fn latest(d: OrderedDict(key, value)) -> Result(key, Nil) {
+  list.first(d.order)
 }

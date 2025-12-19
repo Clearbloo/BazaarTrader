@@ -4,7 +4,7 @@
 import derivative.{type Derivative}
 import gleam/float
 import gleam/result
-import gleam_community/maths/elementary
+import gleam_community/maths.{cos, exponential, pi}
 import gleeunit/should
 import ordered_dict.{type OrderedDict}
 import security.{type Security, Bond, Stock}
@@ -38,7 +38,7 @@ pub fn random_normal(mu: Float, std: Float) {
     float.logarithm(u1)
     |> result.unwrap(0.0)
   let z0 = {
-    -2.0 *. logu *. elementary.cos({ 2.0 *. elementary.pi() *. u2 })
+    -2.0 *. logu *. cos({ 2.0 *. pi() *. u2 })
   }
   mu *. std *. z0
 }
@@ -51,7 +51,7 @@ pub fn gmb(start_price: Price, mu: Float, std: Float, delta_t: Time) {
 }
 
 pub fn discount_factor(value: Float, rate: Float, time: Float) {
-  elementary.exponential(rate *. time) *. value
+  exponential(rate *. time) *. value
 }
 
 pub fn get_price(m: Market, time: Time) -> Price {
