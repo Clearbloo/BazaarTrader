@@ -1,0 +1,11 @@
+services:
+  database:
+    image: "postgres:18.1-bookworm"
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "password" # Use a secret
+  bazaar:
+    build: .
+    ports:
+      - "8080:8000"
