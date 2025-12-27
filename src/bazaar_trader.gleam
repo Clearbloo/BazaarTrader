@@ -10,7 +10,21 @@ import gleam/json
 import gleam/result
 import gleam/string
 import logging
+import market.{Market}
 import mist.{type Connection, type ResponseData}
+import ordered_dict
+import security.{Stock}
+import simulation
+
+type SimArgs {
+  SimArgs(n: Int, market: String, step: Float)
+}
+
+type SimulationError {
+  BadPayload(String)
+  MissingContentHeader
+  DecodeError(json.DecodeError)
+}
 
 const index = "<html lang='en'>
   <head>
@@ -43,6 +57,49 @@ fn bad_request(msg: String) {
   |> response.set_body(mist.Bytes(bytes_tree.from_string(msg)))
 }
 
+fn get_market(_m: String) {
+  let some_stock = market.Security(Stock)
+  let prices = ordered_dict.insert(ordered_dict.new_float(), 0.0, 10.0)
+  Market(some_stock, "FOO", prices)
+}
+
+fn handle_simulate(
+  request: Request(Connection),
+) -> Result(Response(ResponseData), SimulationError) {
+  let decode_sim_args = {
+    use n <- decode.field("n", decode.int)
+    use market <- decode.field("market", decode.string)
+    use step <- decode.field("step", decode.float)
+    decode.success(SimArgs(n, market, step))
+  }
+  let header =
+    request.get_header(request, "content-type")
+    |> result.map_error(fn(_) { MissingContentHeader })
+  use content_type <- result.try(header)
+  case content_type {
+    "application/json" -> {
+      use req <- result.try(
+        mist.read_body(request, 1024 * 1024 * 10)
+        |> result.map_error(fn(_) { BadPayload("Couldn't read the body") }),
+      )
+
+      use req <- result.try(
+        bit_array.to_string(req.body)
+        |> result.map_error(fn(_) { BadPayload("Couldn't convert to a string") }),
+      )
+      let args =
+        req
+        |> json.parse(decode_sim_args)
+        |> result.map_error(fn(e) { DecodeError(e) })
+      use args <- result.try(args)
+      let m = get_market(args.market)
+      let sim = simulation.simulate(args.n, m, args.step, market.model_price)
+      Ok(respond_with_json("foo"))
+    }
+    _ -> Ok(unsupported_media_type(content_type, "application/json"))
+  }
+}
+
 pub fn main() {
   logging.configure()
   logging.set_level(logging.Debug)
@@ -63,32 +120,13 @@ pub fn main() {
           |> response.prepend_header("my-value", "abc")
           |> response.prepend_header("my-value", "123")
           |> response.set_body(mist.Bytes(bytes_tree.from_string(index)))
-        ["echo"] -> echo_body(req)
         ["simulate"] ->
-          fn(request: Request(Connection)) -> Response(ResponseData) {
-            use request, content_type <- get_content_header(request)
-            case content_type {
-              "application/json" -> {
-                mist.read_body(request, 1024 * 1024 * 10)
-                |> result.map(fn(req) {
-                  case bit_array.to_string(req.body) {
-                    Error(Nil) -> bad_request("couldn't decode json")
-                    Ok(payload) -> {
-                      let data =
-                        json.parse(
-                          payload,
-                          decode.dict(decode.string, decode.string),
-                        )
-                      echo data
-                      respond_with_json("foo")
-                    }
-                  }
-                })
-                |> result.lazy_unwrap(fn() { bad_request("something") })
-              }
-              _ -> unsupported_media_type(content_type, "application/json")
-            }
-          }(req)
+          case handle_simulate(req) {
+            Ok(resp) -> resp
+            Error(BadPayload(msg)) -> bad_request(msg)
+            Error(DecodeError(e)) -> bad_request("Json decode error")
+            Error(MissingContentHeader) -> bad_request("Missing content header")
+          }
 
         _ -> not_found()
       }
@@ -112,32 +150,4 @@ fn respond_with_string(message: String) -> Response(ResponseData) {
   response.new(200)
   |> response.set_body(mist.Bytes(bytes_tree.from_string(message)))
   |> response.set_header("content-type", "text/plain")
-}
-
-fn get_content_header(
-  request: Request(Connection),
-  request_handler: fn(Request(Connection), String) -> Response(ResponseData),
-) -> Response(ResponseData) {
-  case request.get_header(request, "content-type") {
-    Error(Nil) -> {
-      respond_with_string("Couldn't read a content-type header: ")
-    }
-    Ok(content_type) -> request_handler(request, content_type)
-  }
-}
-
-fn echo_body(request: Request(Connection)) -> Response(ResponseData) {
-  use request, content_type <- get_content_header(request)
-  case content_type {
-    "text/plain" -> {
-      mist.read_body(request, 1024 * 1024 * 10)
-      |> result.map(fn(req) {
-        let body = bit_array.to_string(req.body) |> result.unwrap("")
-        let resp_body = "Yo what's up, you said: " <> body
-        respond_with_string(resp_body)
-      })
-      |> result.lazy_unwrap(fn() { bad_request("todo") })
-    }
-    _ -> unsupported_media_type(content_type, "text/plain")
-  }
 }
