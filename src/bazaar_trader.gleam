@@ -128,7 +128,7 @@ pub fn main() {
           case handle_simulate(req) {
             Ok(resp) -> resp
             Error(BadPayload(msg)) -> bad_request(msg)
-            Error(DecodeError(e)) -> bad_request("Json decode error")
+            Error(DecodeError(_e)) -> bad_request("Json decode error")
             Error(MissingContentHeader) -> bad_request("Missing content header")
           }
 
