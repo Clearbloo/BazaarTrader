@@ -5,6 +5,7 @@ import derivative.{type Derivative}
 import gleam/dict
 import gleam/dynamic
 import gleam/float
+import gleam/json
 import gleam/result
 import gleam_community/maths.{cos, exponential, pi, square_root}
 import ordered_dict.{type OrderedDict}
@@ -30,7 +31,19 @@ pub type Market {
 }
 
 pub fn to_json(m: Market) -> String {
-  ""
+  json.object([
+    #("ticker", json.string(m.ticker)),
+    #(
+      "prices",
+      json.array(ordered_dict.to_list(m.prices), fn(p) {
+        json.object([
+          #("time", json.float(p.0)),
+          #("price", json.float(p.1)),
+        ])
+      }),
+    ),
+  ])
+  |> json.to_string
 }
 
 pub fn random_normal(mu: Float, std: Float) {

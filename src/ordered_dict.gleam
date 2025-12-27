@@ -40,3 +40,9 @@ pub fn insert(
 pub fn latest(d: OrderedDict(key, value)) -> Result(key, Nil) {
   list.first(d.order)
 }
+
+pub fn to_list(d: OrderedDict(k, v)) -> List(#(k, v)) {
+  use k <- list.map(d.order)
+  let assert Ok(v) = dict.get(d.values, k)
+  #(k, v)
+}

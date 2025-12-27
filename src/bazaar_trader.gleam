@@ -94,7 +94,11 @@ fn handle_simulate(
       use args <- result.try(args)
       let m = get_market(args.market)
       let sim = simulation.simulate(args.n, m, args.step, market.model_price)
-      Ok(respond_with_json("foo"))
+      use sim <- result.try(
+        sim
+        |> result.map_error(fn(_) { BadPayload("Simulation failed") }),
+      )
+      Ok(respond_with_json(market.to_json(sim)))
     }
     _ -> Ok(unsupported_media_type(content_type, "application/json"))
   }
