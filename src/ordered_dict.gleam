@@ -30,9 +30,20 @@ pub fn insert(
   k: key,
   v: value,
 ) -> OrderedDict(key, value) {
-  let order = case list.contains(d.order, k) {
-    False -> [k, ..d.order] |> list.sort(d.order_func)
+  let already_exists = dict.has_key(d.values, k)
+  let order = case already_exists {
     True -> d.order
+    False -> {
+      case d.order {
+        [] -> [k]
+        [first, ..] -> {
+          case d.order_func(k, first) {
+            order.Lt -> [k, ..d.order]
+            _ -> [k, ..d.order] |> list.sort(d.order_func)
+          }
+        }
+      }
+    }
   }
   OrderedDict(dict.insert(d.values, k, v), order, d.order_func)
 }
