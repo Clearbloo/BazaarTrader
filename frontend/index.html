@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazaar Trader</title>
+    <link rel="stylesheet" href="src/styles.css">
+    <script type="module" src="/src/bazaar_frontend.gleam"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 800px;
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+    <script type="module">
+        import { main } from "/build/dev/javascript/frontend/bazaar_frontend.mjs";
+        main();
+    </script>
+</body>
+
+</html>

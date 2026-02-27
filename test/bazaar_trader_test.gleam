@@ -11,8 +11,6 @@ pub fn main() {
   gleeunit.main()
 }
 
-
-
 pub fn systematic_test() {
   sim.systematic_variance([1.0, 2.0, 3.0], 0.5)
   |> should.equal(9.0)

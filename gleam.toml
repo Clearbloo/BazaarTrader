@@ -18,6 +18,13 @@ gleam_time = ">= 1.6.0 and < 2.0.0"
 pog = ">= 4.1.0 and < 5.0.0"
 squirrel = ">= 4.6.0 and < 5.0.0" # Generates sql functions
 gleam_json = ">= 3.1.0 and < 4.0.0"
+simplifile = ">= 2.3.2 and < 3.0.0"
+
+# [dependencies]
+lustre = ">= 5.4.0 and < 6.0.0"
+gleam_javascript = ">= 1.0.0 and < 2.0.0"
+lustre_http = ">= 1.0.0 and < 2.0.0"
+
 
 [dev-dependencies]
 

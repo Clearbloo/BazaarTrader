@@ -55,10 +55,10 @@ pub fn random_normal(mu: Float, std: Float) {
   let logu =
     float.logarithm(u1)
     |> result.unwrap(0.0)
-  let sqrt_part = 
+  let sqrt_part =
     float.square_root(-2.0 *. logu)
     |> result.unwrap(0.0)
-  
+
   let z0 = sqrt_part *. cos({ 2.0 *. pi() *. u2 })
   mu +. { std *. z0 }
 }

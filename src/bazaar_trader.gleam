@@ -7,6 +7,7 @@ import gleam/erlang/process
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
 import gleam/json
+import gleam/option.{None}
 import gleam/result
 import gleam/string
 import logging
@@ -25,15 +26,6 @@ type SimulationError {
   MissingContentHeader
   DecodeError(json.DecodeError)
 }
-
-const index = "<html lang='en'>
-  <head>
-    <title>Bazaar Trader</title>
-  </head>
-  <body>
-  Welcome!
-  </body>
-</html>"
 
 fn unsupported_media_type(
   expected_type: String,
@@ -104,6 +96,31 @@ fn handle_simulate(
   }
 }
 
+fn serve_static(path: String) -> Response(ResponseData) {
+  let content_type = guess_content_type(path)
+  mist.send_file(path, offset: 0, limit: None)
+  |> result.map(fn(resp) {
+    response.set_header(response.new(200), "content-type", content_type)
+    |> response.set_body(resp)
+  })
+  |> result.unwrap(not_found())
+}
+
+fn guess_content_type(path: String) -> String {
+  case string.ends_with(path, ".html") {
+    True -> "text/html"
+    False ->
+      case string.ends_with(path, ".js") || string.ends_with(path, ".mjs") {
+        True -> "application/javascript"
+        False ->
+          case string.ends_with(path, ".css") {
+            True -> "text/css"
+            False -> "application/octet-stream"
+          }
+      }
+  }
+}
+
 pub fn main() {
   logging.configure()
   logging.set_level(logging.Debug)
@@ -116,14 +133,11 @@ pub fn main() {
       )
       logging.log(
         logging.Info,
-        "Path segments" <> string.inspect(request.path_segments(req)),
+        "Path segments: " <> string.inspect(request.path_segments(req)),
       )
+
       case request.path_segments(req) {
-        [] ->
-          response.new(200)
-          |> response.prepend_header("my-value", "abc")
-          |> response.prepend_header("my-value", "123")
-          |> response.set_body(mist.Bytes(bytes_tree.from_string(index)))
+        [] -> serve_static("frontend/index.html")
         ["simulate"] ->
           case handle_simulate(req) {
             Ok(resp) -> resp
@@ -131,8 +145,13 @@ pub fn main() {
             Error(DecodeError(_e)) -> bad_request("Json decode error")
             Error(MissingContentHeader) -> bad_request("Missing content header")
           }
-
-        _ -> not_found()
+        path -> {
+          // Serve other files from frontend directory
+          // Security: In a real app, sanitize path to prevent traversal.
+          // For now, we trust the dev environment.
+          let file_path = "frontend/" <> string.join(path, "/")
+          serve_static(file_path)
+        }
       }
     }
     |> mist.new
@@ -148,10 +167,4 @@ fn respond_with_json(message: String) -> Response(ResponseData) {
   response.new(200)
   |> response.set_body(mist.Bytes(bytes_tree.from_string(message)))
   |> response.set_header("content-type", "application/json")
-}
-
-fn respond_with_string(message: String) -> Response(ResponseData) {
-  response.new(200)
-  |> response.set_body(mist.Bytes(bytes_tree.from_string(message)))
-  |> response.set_header("content-type", "text/plain")
 }
